@@ -1,7 +1,8 @@
 /* ============================================================
    LSR AI STUDIO — js/state.js
    Central store: conversations, code-lab files, schedules,
-   settings. Persisted to localStorage (debounced).
+   studio sites, settings (incl. per-provider AI configs).
+   Persisted to localStorage (debounced).
    ============================================================ */
 (function () {
   "use strict";
@@ -13,15 +14,72 @@
       Math.random().toString(36).slice(2, 8);
   }
 
+  /* ---------- AI provider catalog (pure, testable) ---------- */
+  function providerCatalog() {
+    return [
+      {
+        id: "pollinations", name: "Pollinations Free", tag: "FREE · no key needed",
+        base: "https://text.pollinations.ai/openai", model: "openai-fast", needsKey: false,
+        blurb: "Completely free — no account, no API key. OpenAI-compatible chat endpoint served by Pollinations."
+      },
+      {
+        id: "openrouter", name: "OpenRouter", tag: "Free API key",
+        base: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free", needsKey: true,
+        blurb: "Free API key from openrouter.ai. Models whose id ends in :free cost nothing."
+      },
+      {
+        id: "gemini", name: "Google Gemini", tag: "Free API key",
+        base: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-2.0-flash", needsKey: true,
+        blurb: "Google's OpenAI-compatible endpoint. Generous free tier with a free key from Google AI Studio."
+      },
+      {
+        id: "groq", name: "Groq", tag: "Free API key",
+        base: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", needsKey: true,
+        blurb: "Extremely fast inference. Free tier with a free key from console.groq.com."
+      },
+      {
+        id: "custom", name: "Custom OpenAI-compatible", tag: "Your own server",
+        base: "", model: "", needsKey: true,
+        blurb: "Point at anything OpenAI-compatible: vLLM, Ollama, LiteLLM, LM Studio, NVIDIA NIM — or your own self-hosted LiteLLM gateway."
+      }
+    ];
+  }
+
+  function defaultProviders() {
+    var out = {};
+    providerCatalog().forEach(function (p) {
+      out[p.id] = { base: p.base, model: p.model, key: "" };
+    });
+    return out;
+  }
+
   function defaultSettings() {
     return {
-      apiBase: "",
-      apiKey: "",
-      model: "",
+      providerId: "pollinations",
+      providers: defaultProviders(),
       accent: "cyan",
       bgAnimation: true,
       activeModel: "demo" // "demo" | "live"
     };
+  }
+
+  /* Migrate pre-provider settings (flat apiBase/apiKey/model) into
+     the Custom provider slot. Pure — safe to unit test. */
+  function migrateLegacySettings(s) {
+    s = s || {};
+    if (!s.providerId && (s.apiBase || s.apiKey || s.model)) {
+      s.providerId = "custom";
+      s.providers = s.providers || {};
+      s.providers.custom = {
+        base: s.apiBase || "",
+        key: s.apiKey || "",
+        model: s.model || ""
+      };
+    }
+    delete s.apiBase;
+    delete s.apiKey;
+    delete s.model;
+    return s;
   }
 
   function defaultFiles() {
@@ -45,6 +103,10 @@ console.log("fib(10) =", fibonacci(10));`
     }];
   }
 
+  function defaultSites() {
+    return { templateId: "business", configs: {} };
+  }
+
   function defaultState() {
     return {
       conversations: [],
@@ -52,6 +114,7 @@ console.log("fib(10) =", fibonacci(10));`
       files: defaultFiles(),
       activeFileId: null,
       schedules: [],
+      sites: defaultSites(),
       settings: defaultSettings()
     };
   }
@@ -68,7 +131,22 @@ console.log("fib(10) =", fibonacci(10));`
           state.files = Array.isArray(parsed.files) && parsed.files.length ? parsed.files : defaultFiles();
           state.activeFileId = parsed.activeFileId || (state.files[0] && state.files[0].id) || null;
           state.schedules = Array.isArray(parsed.schedules) ? parsed.schedules : [];
-          state.settings = Object.assign(defaultSettings(), parsed.settings || {});
+          state.settings = Object.assign(
+            defaultSettings(),
+            migrateLegacySettings(parsed.settings || {})
+          );
+          // Fill any provider slots missing from older saves
+          state.settings.providers = Object.assign(
+            defaultProviders(),
+            state.settings.providers || {}
+          );
+          if (parsed.sites && typeof parsed.sites === "object") {
+            state.sites = {
+              templateId: parsed.sites.templateId || "business",
+              configs: parsed.sites.configs && typeof parsed.sites.configs === "object"
+                ? parsed.sites.configs : {}
+            };
+          }
         }
       }
     } catch (e) { /* corrupted storage -> start fresh */ }
@@ -86,11 +164,23 @@ console.log("fib(10) =", fibonacci(10));`
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(saveNow, 250);
   }
+  // Flush pending saves when the page is hidden/closed, so a fast
+  // tab close never loses the last change.
+  function flush() {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    saveNow();
+  }
+  try {
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") flush();
+    });
+  } catch (e) {}
 
   function exportData() {
     return JSON.stringify({
       app: "lsr-ai-studio",
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       data: LSR.state
     }, null, 2);
@@ -104,7 +194,16 @@ console.log("fib(10) =", fibonacci(10));`
     if (Array.isArray(data.conversations)) next.conversations = data.conversations;
     if (Array.isArray(data.files) && data.files.length) next.files = data.files;
     if (Array.isArray(data.schedules)) next.schedules = data.schedules;
-    if (data.settings) next.settings = Object.assign(defaultSettings(), data.settings);
+    if (data.settings) {
+      next.settings = Object.assign(defaultSettings(), migrateLegacySettings(data.settings));
+      next.settings.providers = Object.assign(defaultProviders(), next.settings.providers || {});
+    }
+    if (data.sites && typeof data.sites === "object") {
+      next.sites = {
+        templateId: data.sites.templateId || "business",
+        configs: data.sites.configs || {}
+      };
+    }
     next.activeConvId = data.activeConvId || null;
     next.activeFileId = data.activeFileId || (next.files[0] && next.files[0].id) || null;
     LSR.state = next;
@@ -138,4 +237,8 @@ console.log("fib(10) =", fibonacci(10));`
   LSR.on = on;
   LSR.emit = emit;
   LSR.STORE_KEY = STORE_KEY;
+  LSR.PROVIDERS = providerCatalog();
+  LSR.providerCatalog = providerCatalog;
+  LSR.defaultProviders = defaultProviders;
+  LSR.migrateLegacySettings = migrateLegacySettings;
 })();

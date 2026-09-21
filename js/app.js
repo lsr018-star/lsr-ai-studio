@@ -12,6 +12,7 @@
   var MODULES = {
     chat: { title: "Chat", sub: "Streaming AI conversation" },
     codelab: { title: "Code Lab", sub: "Edit, run and AI-assist your code" },
+    sites: { title: "Studio Sites", sub: "Build client-ready websites" },
     automations: { title: "Automations", sub: "Scheduled prompts & recurrences" },
     models: { title: "Models", sub: "Open models for the studio" },
     settings: { title: "Settings", sub: "Live API, appearance & data" }
@@ -74,17 +75,11 @@
     demoOpt.textContent = "LSR Demo (built-in)";
     sel.appendChild(demoOpt);
 
-    if (s.model) {
-      var liveOpt = document.createElement("option");
-      liveOpt.value = "live";
-      liveOpt.textContent = "Live: " + s.model;
-      sel.appendChild(liveOpt);
-    } else {
-      var placeholder = document.createElement("option");
-      placeholder.value = "live";
-      placeholder.textContent = "Live: configure in Settings…";
-      sel.appendChild(placeholder);
-    }
+    var cfg = LSR.api.activeProvider();
+    var liveOpt = document.createElement("option");
+    liveOpt.value = "live";
+    liveOpt.textContent = "Live: " + cfg.name + " · " + (cfg.model || "…");
+    sel.appendChild(liveOpt);
     sel.value = s.activeModel === "live" ? "live" : "demo";
     refreshModePill();
   }
@@ -104,7 +99,10 @@
   function onModelChange(e) {
     var v = e.target.value;
     if (v === "live" && !LSR.api.liveReady()) {
-      toast("Add a Base URL, API key and model in Settings first.", "error");
+      var cfg = LSR.api.activeProvider();
+      toast(cfg.needsKey
+        ? "Add your free API key in Settings first (" + cfg.name + ")."
+        : "Finish the provider setup in Settings first.", "error");
       e.target.value = "demo";
       LSR.state.settings.activeModel = "demo";
       switchModule("settings");
@@ -126,10 +124,19 @@
     paletteCommands = [
       { label: "Go to Chat", hint: "module", run: function () { switchModule("chat"); } },
       { label: "Go to Code Lab", hint: "module", run: function () { switchModule("codelab"); } },
+      { label: "Go to Studio Sites", hint: "Alt+S", run: function () { switchModule("sites"); } },
       { label: "Go to Automations", hint: "module", run: function () { switchModule("automations"); } },
       { label: "Go to Models", hint: "module", run: function () { switchModule("models"); } },
       { label: "Go to Settings", hint: "module", run: function () { switchModule("settings"); } },
       { label: "New chat", hint: "Ctrl+N", run: function () { switchModule("chat"); LSR.chat.newConversation(); } },
+      { label: "Generate image from prompt", hint: "chat", run: function () {
+        switchModule("chat");
+        setTimeout(function () { document.getElementById("btn-image").click(); }, 60);
+      } },
+      { label: "Export current site as HTML", hint: "sites", run: function () {
+        switchModule("sites");
+        setTimeout(function () { document.getElementById("btn-export-site").click(); }, 60);
+      } },
       { label: "New code file", hint: "code lab", run: function () { switchModule("codelab"); document.getElementById("btn-add-file").click(); } },
       { label: "Add schedule", hint: "automations", run: function () { switchModule("automations"); document.getElementById("btn-add-sched").click(); } },
       { label: "Toggle background animation", hint: "appearance", run: function () {
@@ -215,11 +222,67 @@
 
   /* ---------------- settings page ---------------- */
 
+  /* ---------------- settings page: provider picker ---------------- */
+
+  function renderProviderList() {
+    var wrap = $("provider-list");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    var cur = LSR.state.settings.providerId;
+    LSR.PROVIDERS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "provider-card" + (p.id === cur ? " selected" : "");
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", p.id === cur ? "true" : "false");
+
+      var top = document.createElement("div");
+      top.className = "pc-top";
+      var nm = document.createElement("span");
+      nm.className = "pc-name";
+      nm.textContent = p.name;
+      var tag = document.createElement("span");
+      tag.className = "pc-tag" + (p.needsKey ? "" : " free");
+      tag.textContent = p.tag;
+      top.appendChild(nm);
+      top.appendChild(tag);
+
+      var blurb = document.createElement("div");
+      blurb.className = "pc-blurb";
+      blurb.textContent = p.blurb;
+
+      b.appendChild(top);
+      b.appendChild(blurb);
+      b.addEventListener("click", function () { selectProvider(p.id); });
+      wrap.appendChild(b);
+    });
+    syncProviderForm();
+  }
+
+  function selectProvider(id) {
+    LSR.state.settings.providerId = id;
+    LSR.save();
+    renderProviderList();
+    LSR.emit("settings-changed");
+    refreshModelPicker();
+    toast("Provider: " + LSR.api.activeProvider().name, "info");
+  }
+
+  function syncProviderForm() {
+    var cfg = LSR.api.activeProvider();
+    $("set-api-base").value = cfg.base || "";
+    $("set-api-key").value = cfg.key || "";
+    $("set-model").value = cfg.model || "";
+    $("set-api-key-wrap").style.display = cfg.needsKey ? "" : "none";
+    $("set-api-base").readOnly = false;
+    $("provider-hint").textContent = cfg.needsKey
+      ? cfg.blurb + " Paste your key below — it never leaves this browser except to " + cfg.name + "."
+      : cfg.blurb + " You're good to go — just flip the top-bar picker to Live.";
+  }
+
   function syncSettingsForm() {
     var s = LSR.state.settings;
-    $("set-api-base").value = s.apiBase || "";
-    $("set-api-key").value = s.apiKey || "";
-    $("set-model").value = s.model || "";
+    renderProviderList();
     $("set-bg-anim").checked = !!s.bgAnimation;
     document.querySelectorAll(".accent-swatch").forEach(function (b) {
       b.classList.toggle("selected", b.dataset.accent === s.accent);
@@ -239,30 +302,31 @@
 
   function saveApiSettings() {
     var s = LSR.state.settings;
-    s.apiBase = $("set-api-base").value.trim().replace(/\/+$/, "");
-    s.apiKey = $("set-api-key").value.trim();
-    s.model = $("set-model").value.trim();
-    if (s.apiBase && !/^https?:\/\//i.test(s.apiBase)) {
+    var cfg = s.providers[s.providerId] || (s.providers[s.providerId] = {});
+    cfg.base = $("set-api-base").value.trim().replace(/\/+$/, "");
+    cfg.key = $("set-api-key").value.trim();
+    cfg.model = $("set-model").value.trim();
+    if (cfg.base && !/^https?:\/\//i.test(cfg.base)) {
       toast("Base URL should start with http:// or https://", "error");
       return;
     }
     LSR.save();
     LSR.emit("settings-changed");
     refreshModelPicker();
-    toast("API settings saved", "success");
+    toast("Saved for " + LSR.api.activeProvider().name, "success");
   }
 
   async function testApi() {
     saveApiSettingsSilent();
-    var s = LSR.state.settings;
+    var cfg = LSR.api.activeProvider();
     if (!LSR.api.liveReady()) {
-      toast("Fill in Base URL, API key and model first.", "error");
+      toast("Fill in Base URL and model" + (cfg.needsKey ? ", plus your API key" : "") + " first.", "error");
       return;
     }
-    toast("Testing connection…", "info");
+    toast("Testing " + cfg.name + "…", "info");
     try {
-      await LSR.api.testConnection(s.apiBase, s.apiKey, s.model);
-      toast("Connection successful — " + s.model + " responded.", "success");
+      await LSR.api.testConnection(cfg);
+      toast("Connection successful — " + cfg.model + " responded.", "success");
     } catch (err) {
       toast("Connection failed: " + err.message, "error");
     }
@@ -270,12 +334,24 @@
 
   function saveApiSettingsSilent() {
     var s = LSR.state.settings;
-    s.apiBase = $("set-api-base").value.trim().replace(/\/+$/, "");
-    s.apiKey = $("set-api-key").value.trim();
-    s.model = $("set-model").value.trim();
+    var cfg = s.providers[s.providerId] || (s.providers[s.providerId] = {});
+    cfg.base = $("set-api-base").value.trim().replace(/\/+$/, "");
+    cfg.key = $("set-api-key").value.trim();
+    cfg.model = $("set-model").value.trim();
     LSR.save();
     LSR.emit("settings-changed");
     refreshModelPicker();
+  }
+
+  function resetProvider() {
+    var id = LSR.state.settings.providerId;
+    var p = LSR.api.getProvider(id);
+    LSR.state.settings.providers[id] = { base: p.base, model: p.model, key: "" };
+    LSR.save();
+    syncProviderForm();
+    LSR.emit("settings-changed");
+    refreshModelPicker();
+    toast("Provider reset to defaults", "info");
   }
 
   function exportData() {
@@ -312,6 +388,7 @@
   function bindSettings() {
     $("btn-save-api").addEventListener("click", saveApiSettings);
     $("btn-test-api").addEventListener("click", testApi);
+    $("btn-reset-provider").addEventListener("click", resetProvider);
     document.querySelectorAll(".accent-swatch").forEach(function (b) {
       b.addEventListener("click", function () {
         LSR.state.settings.accent = b.dataset.accent;
@@ -464,6 +541,9 @@
         e.preventDefault();
         switchModule("chat");
         LSR.chat.newConversation();
+      } else if (e.altKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        switchModule("sites");
       } else if (e.key === "Escape") {
         if ($("palette-overlay").classList.contains("open")) closePalette();
         else if (document.body.classList.contains("sidebar-open")) document.body.classList.remove("sidebar-open");
@@ -472,6 +552,19 @@
     });
 
     LSR.on("settings-changed", function () { refreshModePill(); });
+  }
+
+  /* ---------------- PWA: service worker (http(s) only) ---------------- */
+
+  function registerSW() {
+    try {
+      if (!("serviceWorker" in navigator)) return;
+      // file:// must never attempt registration — it would throw.
+      if (location.protocol !== "http:" && location.protocol !== "https:") return;
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () { /* offline-first is best-effort */ });
+      });
+    } catch (e) { /* never break boot over PWA */ }
   }
 
   /* ---------------- boot ---------------- */
@@ -487,7 +580,9 @@
     refreshModelPicker();
     LSR.chat.init();
     LSR.codelab.init();
+    LSR.sites.init();
     LSR.automations.init();
+    registerSW();
     switchModule("chat");
   }
 

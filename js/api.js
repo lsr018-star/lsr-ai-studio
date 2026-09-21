@@ -1,8 +1,10 @@
 /* ============================================================
    LSR AI STUDIO — js/api.js
-   Live backend: OpenAI-compatible /chat/completions streaming
-   via fetch + ReadableStream SSE parsing. Plus LSR.ai.complete,
-   the single router that picks Demo vs Live for every feature.
+   Provider-aware backend: OpenAI-compatible /chat/completions
+   streaming via fetch + ReadableStream SSE parsing.
+   LSR.api.complete is the single router that picks Demo vs
+   Live for every feature. Pure helpers (buildChatRequest,
+   parseSSEData) are exposed for unit tests.
    ============================================================ */
 (function () {
   "use strict";
@@ -11,25 +13,78 @@
     return String(base).replace(/\/+$/, "") + path;
   }
 
+  function getProvider(id) {
+    var list = LSR.PROVIDERS || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
+    }
+    return list[0];
+  }
+
+  /* Effective config for a provider: stored overrides merged over
+     catalog defaults. Pure given (LSR.PROVIDERS, stored). */
+  function providerConfig(id) {
+    var p = getProvider(id);
+    var stored = (LSR.state.settings.providers || {})[p.id] || {};
+    return {
+      id: p.id,
+      name: p.name,
+      tag: p.tag,
+      blurb: p.blurb,
+      needsKey: !!p.needsKey,
+      base: stored.base !== undefined ? stored.base : p.base,
+      model: stored.model !== undefined ? stored.model : p.model,
+      key: stored.key || ""
+    };
+  }
+
+  function activeProvider() {
+    return providerConfig(LSR.state.settings.providerId || "pollinations");
+  }
+
+  /* Pure: build the fetch params for a chat completion request.
+     Authorization header is only attached when a key exists, so
+     keyless free providers (Pollinations) work. */
+  function buildChatRequest(cfg, messages, stream) {
+    var headers = { "Content-Type": "application/json" };
+    if (cfg.key) headers["Authorization"] = "Bearer " + cfg.key;
+    return {
+      url: joinUrl(cfg.base, "/chat/completions"),
+      headers: headers,
+      body: {
+        model: cfg.model,
+        stream: !!stream,
+        messages: messages
+      }
+    };
+  }
+
+  /* Pure: parse one SSE "data:" payload into a text delta.
+     Returns "" for [DONE], malformed lines, or non-content events. */
+  function parseSSEData(data) {
+    if (data === "[DONE]") return "";
+    try {
+      var json = JSON.parse(data);
+      var delta = json.choices && json.choices[0] && json.choices[0].delta;
+      var content = delta && delta.content ? delta.content : "";
+      return typeof content === "string" ? content : "";
+    } catch (e) {
+      return "";
+    }
+  }
+
   /* Stream chat completions. onToken receives text deltas.
      Resolves with the full text. Rejects on HTTP/network error. */
   async function streamChat(opts) {
-    var base = joinUrl(opts.baseUrl, "/chat/completions");
+    var req = buildChatRequest(opts.provider, opts.messages, true);
     var ctrl = opts.signal ? null : new AbortController();
     var signal = opts.signal || ctrl.signal;
 
-    var res = await fetch(base, {
+    var res = await fetch(req.url, {
       method: "POST",
       signal: signal,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + opts.apiKey
-      },
-      body: JSON.stringify({
-        model: opts.model,
-        stream: true,
-        messages: opts.messages
-      })
+      headers: req.headers,
+      body: JSON.stringify(req.body)
     });
 
     if (!res.ok) {
@@ -52,33 +107,21 @@
       for (var i = 0; i < parts.length; i++) {
         var line = parts[i].trim();
         if (!line || line.indexOf("data:") !== 0) continue;
-        var data = line.slice(5).trim();
-        if (data === "[DONE]") continue;
-        try {
-          var json = JSON.parse(data);
-          var delta = json.choices && json.choices[0] && json.choices[0].delta;
-          var content = delta && delta.content ? delta.content : "";
-          if (content) { full += content; if (opts.onToken) opts.onToken(content); }
-        } catch (e) { /* skip malformed SSE line */ }
+        var content = parseSSEData(line.slice(5).trim());
+        if (content) { full += content; if (opts.onToken) opts.onToken(content); }
       }
     }
     return full;
   }
 
   /* Quick non-streaming probe used by "Test connection". */
-  async function testConnection(baseUrl, apiKey, model) {
-    var res = await fetch(joinUrl(baseUrl, "/chat/completions"), {
+  async function testConnection(cfg) {
+    var req = buildChatRequest(cfg, [{ role: "user", content: "Reply with the single word: ok" }], false);
+    req.body.max_tokens = 8;
+    var res = await fetch(req.url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + apiKey
-      },
-      body: JSON.stringify({
-        model: model,
-        stream: false,
-        max_tokens: 8,
-        messages: [{ role: "user", content: "Reply with the single word: ok" }]
-      })
+      headers: req.headers,
+      body: JSON.stringify(req.body)
     });
     if (!res.ok) {
       var detail = "";
@@ -89,8 +132,8 @@
   }
 
   function liveReady() {
-    var s = LSR.state.settings;
-    return !!(s.apiBase && s.apiKey && s.model);
+    var cfg = activeProvider();
+    return !!(cfg.base && cfg.model && (cfg.key || !cfg.needsKey));
   }
 
   function isLiveMode() {
@@ -104,7 +147,7 @@
   async function complete(kind, prompt, opts) {
     opts = opts || {};
     if (isLiveMode()) {
-      var s = LSR.state.settings;
+      var cfg = activeProvider();
       var messages;
       if (kind === "chat") {
         messages = (opts.history || []).concat([{ role: "user", content: prompt }]);
@@ -115,9 +158,7 @@
         ];
       }
       return streamChat({
-        baseUrl: s.apiBase,
-        apiKey: s.apiKey,
-        model: s.model,
+        provider: cfg,
         messages: messages,
         onToken: opts.onToken,
         signal: opts.signal
@@ -146,6 +187,12 @@
     testConnection: testConnection,
     liveReady: liveReady,
     isLiveMode: isLiveMode,
-    complete: complete
+    complete: complete,
+    getProvider: getProvider,
+    providerConfig: providerConfig,
+    activeProvider: activeProvider,
+    // pure helpers, exposed for tests
+    buildChatRequest: buildChatRequest,
+    parseSSEData: parseSSEData
   };
 })();

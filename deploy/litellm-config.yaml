@@ -1,0 +1,30 @@
+# LiteLLM gateway config — exposes your models on one OpenAI-compatible endpoint.
+#
+# Point the Studio at it via:
+#   Settings -> Live API -> "Custom OpenAI-compatible"
+#   Base URL: http://YOUR-SERVER-IP:4000
+#   API key:  the LITELLM_MASTER_KEY from your .env
+#   Model:    studio-free   (or any model_name below)
+
+model_list:
+  # Local GPU model served by the vLLM service in docker-compose.yml
+  - model_name: studio-free
+    litellm_params:
+      model: openai/Qwen/Qwen2.5-Coder-7B-Instruct
+      api_base: http://vllm:8000/v1
+      api_key: EMPTY
+
+  # Example: route to a free cloud model through OpenRouter instead of vLLM.
+  # Uncomment and set OPENROUTER_API_KEY in .env to use it.
+  # - model_name: studio-cloud-free
+  #   litellm_params:
+  #     model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+  #     api_key: os.environ/OPENROUTER_API_KEY
+
+general_settings:
+  # Keep it simple and local; tighten before exposing to the internet.
+  allow_client_side_ssl_check: false
+
+litellm_settings:
+  drop_params: true
+  num_retries: 2

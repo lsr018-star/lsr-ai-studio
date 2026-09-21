@@ -21,6 +21,8 @@
       .replace(/`([^`\n]+)`/g, "<code class=\"inline\">$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      // images first so the link pattern below doesn't eat the ![...] prefix
+      .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, "<img src=\"$2\" alt=\"$1\" loading=\"lazy\">")
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, "<a href=\"$2\" target=\"_blank\" rel=\"noopener\">$1</a>");
   }
 

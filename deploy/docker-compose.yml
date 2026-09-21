@@ -1,0 +1,63 @@
+# LSR AI Studio — self-hosting stack
+#
+# What this gives you:
+#   studio   -> the static Studio app, served by nginx on :8080
+#   litellm  -> OpenAI-compatible gateway on :4000
+#   vllm     -> open-weights model server on :8000 (OpenAI-compatible too)
+#
+# HONEST NOTE: vLLM needs an NVIDIA GPU machine. There is no free,
+# unlimited GPU tier — see SELF-HOSTING.md for what this really
+# costs and the free alternatives. The studio itself is static and
+# costs nothing to host (Amplify / Netlify / GitHub Pages free tiers).
+
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    # GPU REQUIRED. Remove this whole service if you only want the
+    # static studio + LiteLLM pointed at a cloud API instead.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: >
+      --model ${VLLM_MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}
+      --max-model-len 8192
+      --gpu-memory-utilization 0.9
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "2"]
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-lsr-local-dev-only}
+    depends_on:
+      - vllm
+    restart: unless-stopped
+
+  studio:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      # repo root (index.html, css/, js/, icons/, manifest...) served read-only
+      - ..:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - litellm
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

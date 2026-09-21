@@ -18,6 +18,7 @@
       scroll: $("chat-scroll"),
       input: $("chat-input"),
       send: $("btn-send"),
+      imgBtn: $("btn-image"),
       newChat: $("btn-new-chat"),
       statMsgs: $("stat-msgs"),
       statTokens: $("stat-tokens"),
@@ -26,6 +27,7 @@
 
     els.newChat.addEventListener("click", newConversation);
     els.send.addEventListener("click", onSendClick);
+    els.imgBtn.addEventListener("click", generateImage);
     els.input.addEventListener("keydown", onInputKey);
     els.input.addEventListener("input", autoresize);
     // Copy buttons inside rendered markdown (event delegation)
@@ -418,7 +420,7 @@
     els.statMsgs.textContent = msgs;
     els.statTokens.textContent = Math.ceil(chars / 4).toLocaleString();
     els.statModel.textContent = LSR.api.isLiveMode()
-      ? "live:" + (LSR.state.settings.model || "?")
+      ? "live:" + LSR.api.activeProvider().name
       : "demo";
   }
 
@@ -437,6 +439,41 @@
   function sendFromAutomation(prompt) {
     LSR.switchModule("chat");
     setTimeout(function () { sendMessage(prompt); }, 60);
+  }
+
+  /* Free image generation via Pollinations: inserts the generated
+     image URL as markdown. No fetch needed — the browser loads it. */
+  function generateImage() {
+    var prompt = els.input.value.trim();
+    if (!prompt) {
+      LSR.toast("Describe the image first, then press the image button.", "info");
+      els.input.focus();
+      return;
+    }
+    var conv = activeConv();
+    if (!conv) {
+      newConversation();
+      conv = activeConv();
+    }
+    // encodeURIComponent leaves ( ) unescaped — encode them so the
+    // markdown ![alt](url) wrapper isn't broken.
+    var q = encodeURIComponent(prompt).replace(/\(/g, "%28").replace(/\)/g, "%29");
+    var seed = Math.floor(Math.random() * 999999);
+    var url = "https://image.pollinations.ai/prompt/" + q +
+      "?width=1024&height=1024&seed=" + seed + "&nologo=true";
+    var alt = prompt.slice(0, 60).replace(/[\[\]]/g, "");
+    els.input.value = "";
+    autoresize();
+    conv.messages.push({ role: "user", content: "🎨 " + prompt });
+    conv.messages.push({
+      role: "assistant",
+      content: "Here's your image for **\"" + prompt.slice(0, 80) + "\"**:\n\n![" + alt + "](" + url + ")"
+    });
+    conv.updatedAt = Date.now();
+    LSR.save();
+    LSR.emit("conversations-changed");
+    renderActive();
+    LSR.toast("Image generated", "success");
   }
 
   window.LSR = window.LSR || {};

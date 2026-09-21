@@ -208,5 +208,5 @@
   }
 
   window.LSR = window.LSR || {};
-  LSR.automations = { init: init, render: render };
+  LSR.automations = { init: init, render: render, _validCron: validCron };
 })();

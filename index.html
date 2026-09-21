@@ -3,8 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="LSR AI Studio — a futuristic all-in-one AI workspace. Chat, code, automations and models. A companion to Jarvis by LSR.AI.">
+  <meta name="description" content="LSR AI Studio — a futuristic all-in-one AI workspace. Chat, code, automations, client site builder and free AI models. A companion to Jarvis by LSR.AI.">
   <meta name="theme-color" content="#04060d">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LSR AI Studio">
+  <meta property="og:title" content="LSR AI Studio — Futuristic all-in-one AI workspace">
+  <meta property="og:description" content="Chat, Code Lab, Automations, a client website builder and free AI models — 100% in your browser. A companion to Jarvis by LSR.AI.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="LSR AI Studio">
+  <meta name="twitter:description" content="Chat, Code Lab, Automations, a client website builder and free AI models — 100% in your browser.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LSR Studio">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Ctext x='90' y='118' font-family='Arial' font-weight='bold' font-size='84' text-anchor='middle' fill='%2306121c'%3ELS%3C/text%3E%3C/svg%3E">
   <title>LSR AI Studio — Companion to Jarvis</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='bold' font-size='30' text-anchor='middle' fill='%2306121c'%3ELS%3C/text%3E%3C/svg%3E">
@@ -30,6 +43,10 @@
         <button class="nav-item" data-module="codelab">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           Code Lab
+        </button>
+        <button class="nav-item" data-module="sites">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Studio Sites
         </button>
         <button class="nav-item" data-module="automations">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
@@ -64,10 +81,10 @@
     <!-- ============ MAIN ============ -->
     <div class="main">
       <header class="topbar">
-        <button class="icon-btn hamburger" id="btn-menu" aria-label="Open menu" style="width:34px;height:34px">
+        <button class="icon-btn hamburger" id="btn-menu" aria-label="Open menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:18px;height:18px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <div>
+        <div class="topbar-head">
           <div class="topbar-title" id="topbar-title">Chat</div>
           <div class="topbar-sub" id="topbar-sub">Streaming AI conversation</div>
         </div>
@@ -101,6 +118,9 @@
                     <span id="stat-model">demo</span>
                   </div>
                   <span class="composer-hint">Enter ↵ send · Shift+Enter newline</span>
+                  <button class="img-btn" id="btn-image" title="Generate image from prompt (free)" aria-label="Generate image from prompt">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </button>
                   <button class="send-btn" id="btn-send" title="Send" aria-label="Send message">
                     <svg id="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   </button>
@@ -159,6 +179,37 @@
             </div>
             <div class="ai-result md" id="ai-result" aria-live="polite"></div>
             <div class="ai-result-actions" id="ai-result-actions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STUDIO SITES -->
+      <section class="module" id="module-sites" aria-label="Studio Sites">
+        <div class="sites-layout">
+          <div class="sites-side">
+            <div class="page-hero" style="margin-bottom:4px">
+              <h2>Studio Sites</h2>
+              <p>Build premium, mobile-ready websites for your clients. Pick a template, customize it, preview live — then <b style="color:var(--text)">export a single HTML file</b> to hand over or upload to any domain.</p>
+            </div>
+            <div class="sites-template-grid" id="sites-template-grid" role="listbox" aria-label="Site templates"></div>
+            <div class="glass sites-form-card">
+              <h3 id="sites-form-title">Customize</h3>
+              <div id="sites-form"></div>
+            </div>
+          </div>
+          <div class="sites-main">
+            <div class="sites-preview-bar">
+              <span id="sites-tpl-name">Template</span>
+              <button class="btn btn-primary btn-sm" id="btn-export-site">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export HTML
+              </button>
+            </div>
+            <div class="preview-wrap glass">
+              <div class="skeleton" id="sites-preview-skel"><span>Rendering preview…</span></div>
+              <iframe id="sites-preview" title="Site preview" sandbox="allow-scripts"></iframe>
+            </div>
+            <div class="app-foot">Exports are <b>single self-contained HTML files</b> — no build step, no dependencies. Upload to any host, attach any domain, hand to any client.</div>
           </div>
         </div>
       </section>
@@ -257,24 +308,30 @@
             </div>
             <div class="settings-grid">
               <div class="set-card glass">
-                <h3>Live API</h3>
-                <p>Use any OpenAI-compatible endpoint for real streaming completions. Leave empty to stay in Demo mode.</p>
+                <h3>Live API <span class="free-badge">FREE OPTIONS</span></h3>
+                <p>Pick a provider for real streaming completions. <b style="color:var(--ok)">Pollinations Free</b> works instantly — no key needed. The others need a free API key from their site.</p>
                 <div class="field">
-                  <label for="set-api-base">Base URL</label>
-                  <input type="url" id="set-api-base" placeholder="https://api.openai.com/v1" autocomplete="off">
+                  <label>Provider</label>
+                  <div class="provider-list" id="provider-list" role="radiogroup" aria-label="AI provider"></div>
+                  <div class="hint" id="provider-hint"></div>
                 </div>
-                <div class="field">
+                <div class="field" id="set-api-base-wrap">
+                  <label for="set-api-base">Base URL</label>
+                  <input type="url" id="set-api-base" placeholder="https://…" autocomplete="off">
+                </div>
+                <div class="field" id="set-api-key-wrap">
                   <label for="set-api-key">API key</label>
-                  <input type="password" id="set-api-key" placeholder="sk-…" autocomplete="off">
-                  <div class="hint">Stored in localStorage on this device only. Never sent anywhere except your configured endpoint.</div>
+                  <input type="password" id="set-api-key" placeholder="Paste your free key" autocomplete="off">
+                  <div class="hint">Stored in localStorage on this device only. Never sent anywhere except your chosen provider.</div>
                 </div>
                 <div class="field">
                   <label for="set-model">Model name</label>
-                  <input type="text" id="set-model" placeholder="gpt-4o-mini" autocomplete="off">
+                  <input type="text" id="set-model" placeholder="openai-fast" autocomplete="off">
                 </div>
-                <div style="display:flex;gap:10px">
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
                   <button class="btn btn-primary" id="btn-save-api">Save</button>
                   <button class="btn" id="btn-test-api">Test connection</button>
+                  <button class="btn btn-ghost" id="btn-reset-provider">Reset defaults</button>
                 </div>
               </div>
               <div class="set-card glass">
@@ -311,11 +368,12 @@
                   <div><span class="kbd">Shift</span> + <span class="kbd">Enter</span> newline</div>
                   <div><span class="kbd">Ctrl/⌘</span> + <span class="kbd">K</span> command palette</div>
                   <div><span class="kbd">Ctrl/⌘</span> + <span class="kbd">N</span> new chat</div>
+                  <div><span class="kbd">Alt</span> + <span class="kbd">S</span> Studio Sites</div>
                   <div><span class="kbd">Esc</span> stop generation / close palette</div>
                 </div>
               </div>
             </div>
-            <div class="app-foot">LSR AI Studio is a companion to <b>Jarvis — Your AI workspace</b> by LSR.AI · v1.0 · 100% client-side, zero dependencies</div>
+            <div class="app-foot">LSR AI Studio is a companion to <b>Jarvis — Your AI workspace</b> by LSR.AI · v2.0 · 100% client-side, zero dependencies</div>
           </div>
         </div>
       </section>
@@ -340,6 +398,7 @@
   <script src="js/chat.js"></script>
   <script src="js/codelab.js"></script>
   <script src="js/automations.js"></script>
+  <script src="js/sites.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
