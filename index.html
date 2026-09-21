@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="cyan">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="LSR AI Studio — a futuristic all-in-one AI workspace. Chat, code, automations and models. A companion to Jarvis by LSR.AI.">
+  <meta name="theme-color" content="#04060d">
+  <title>LSR AI Studio — Companion to Jarvis</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='bold' font-size='30' text-anchor='middle' fill='%2306121c'%3ELS%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+  <div class="bg-vignette" aria-hidden="true"></div>
+
+  <div id="app">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar" aria-label="Studio navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">LS</div>
+        <h1>LSR AI Studio<small>Companion to Jarvis</small></h1>
+      </div>
+
+      <nav class="nav" aria-label="Modules">
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item active" data-module="chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Chat
+        </button>
+        <button class="nav-item" data-module="codelab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Code Lab
+        </button>
+        <button class="nav-item" data-module="automations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+          Automations
+        </button>
+        <button class="nav-item" data-module="models">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+          Models
+        </button>
+        <button class="nav-item" data-module="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+      </nav>
+
+      <div class="conv-section" id="conv-section">
+        <div class="conv-head">
+          <span class="nav-label" style="padding:0">Conversations</span>
+          <button class="icon-btn" id="btn-new-chat" title="New chat (Ctrl+N)" aria-label="New chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="conv-list" id="conv-list" role="list"></div>
+      </div>
+
+      <div class="sidebar-foot">
+        <span style="font-size:11.5px;color:var(--muted-2);line-height:1.5">LSR AI Studio · a companion to <b style="color:var(--muted)">Jarvis</b> by LSR.AI</span>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn hamburger" id="btn-menu" aria-label="Open menu" style="width:34px;height:34px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:18px;height:18px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="topbar-title" id="topbar-title">Chat</div>
+          <div class="topbar-sub" id="topbar-sub">Streaming AI conversation</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <span class="mode-pill demo" id="mode-pill"><span class="dot"></span><span id="mode-label">Demo</span></span>
+        <label class="model-picker" title="Active model">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px;color:var(--accent)"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+          <select id="model-select" aria-label="Active model"></select>
+        </label>
+        <button class="palette-btn" id="btn-palette" title="Command palette">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          <span class="pbtn-label">Commands</span>
+          <span class="kbd">Ctrl K</span>
+        </button>
+      </header>
+
+      <!-- CHAT -->
+      <section class="module active" id="module-chat" aria-label="Chat">
+        <div class="chat-wrap">
+          <div class="chat-scroll" id="chat-scroll">
+            <div class="chat-inner" id="chat-messages"></div>
+          </div>
+          <div class="composer-zone">
+            <div class="composer">
+              <div class="composer-box">
+                <textarea id="chat-input" rows="1" placeholder="Message LSR AI Studio…  (Enter to send, Shift+Enter for newline)" aria-label="Chat message"></textarea>
+                <div class="composer-bar">
+                  <div class="chat-stats">
+                    <span><b id="stat-msgs">0</b> msgs</span>
+                    <span>~<b id="stat-tokens">0</b> tokens</span>
+                    <span id="stat-model">demo</span>
+                  </div>
+                  <span class="composer-hint">Enter ↵ send · Shift+Enter newline</span>
+                  <button class="send-btn" id="btn-send" title="Send" aria-label="Send message">
+                    <svg id="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CODE LAB -->
+      <section class="module" id="module-codelab" aria-label="Code Lab">
+        <div class="codelab-layout">
+          <div class="code-panel glass">
+            <div class="file-tabs" id="file-tabs" role="tablist"></div>
+            <div class="editor-toolbar">
+              <span class="lang-badge" id="lang-badge">JS</span>
+              <span class="spacer"></span>
+              <button class="btn btn-sm btn-ghost" id="btn-rename-file" title="Rename file">Rename</button>
+              <button class="btn btn-sm btn-primary" id="btn-run" title="Run JavaScript">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                Run
+              </button>
+            </div>
+            <div class="editor-wrap">
+              <div class="gutter" id="gutter" aria-hidden="true">1</div>
+              <div class="code-scroll">
+                <pre class="code-layer" aria-hidden="true"><code id="hl-code"></code></pre>
+                <textarea class="code-input" id="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Code editor"></textarea>
+              </div>
+            </div>
+            <div class="output-pane">
+              <div class="output-head">
+                <span>Output</span>
+                <span class="spacer" style="flex:1"></span>
+                <button class="icon-btn" id="btn-clear-output" title="Clear output" aria-label="Clear output">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+              <div class="output-body" id="output-body"><span class="log-dim">// Press Run to execute JavaScript and see console output here.</span></div>
+            </div>
+          </div>
+
+          <div class="ai-panel glass">
+            <div class="ai-panel-head">
+              <h3>AI Assistant</h3>
+              <p>Explain, debug, or generate code for the active file. Results stream here.</p>
+            </div>
+            <div class="ai-actions">
+              <button class="btn btn-sm" id="ai-explain">Explain this code</button>
+              <button class="btn btn-sm" id="ai-debug">Find bugs</button>
+            </div>
+            <div class="ai-prompt-row">
+              <input type="text" id="ai-prompt" placeholder="Describe code to generate…" aria-label="Code generation prompt">
+              <button class="btn btn-sm btn-primary" id="ai-generate">Generate</button>
+            </div>
+            <div class="ai-result md" id="ai-result" aria-live="polite"></div>
+            <div class="ai-result-actions" id="ai-result-actions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUTOMATIONS -->
+      <section class="module" id="module-automations" aria-label="Automations">
+        <div class="page-scroll">
+          <div class="page-inner">
+            <div class="page-hero" style="display:flex;align-items:flex-start;gap:16px">
+              <div style="flex:1">
+                <h2>Automations</h2>
+                <p>Schedule recurring prompts — like the Schedules panel in Jarvis. Each schedule holds a cron expression and a task prompt. <b style="color:var(--text)">Run now</b> fires the prompt straight into Chat.</p>
+              </div>
+              <button class="btn btn-primary" id="btn-add-sched">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add schedule
+              </button>
+            </div>
+            <div id="sched-form-wrap" style="display:none;margin-bottom:16px">
+              <div class="glass" style="padding:20px">
+                <h3 style="margin:0 0 12px;font-size:15px" id="sched-form-title">New schedule</h3>
+                <div class="sched-form">
+                  <div class="row2">
+                    <div class="field" style="margin:0">
+                      <label for="sched-name">Name</label>
+                      <input type="text" id="sched-name" placeholder="Morning briefing">
+                    </div>
+                    <div class="field" style="margin:0">
+                      <label for="sched-cron">Cron expression</label>
+                      <input type="text" id="sched-cron" placeholder="0 9 * * *">
+                      <div class="hint">min hour day month weekday — e.g. <span style="font-family:var(--mono)">0 9 * * *</span> = daily 09:00</div>
+                    </div>
+                  </div>
+                  <div class="field" style="margin:0">
+                    <label for="sched-task">Task prompt</label>
+                    <textarea id="sched-task" placeholder="Summarize today's priorities and draft my top 3 focus items…"></textarea>
+                  </div>
+                  <div class="toggle-row" style="padding:0">
+                    <div><div class="t-label">Enabled</div><div class="t-desc">Disabled schedules are kept but never fire.</div></div>
+                    <label class="switch"><input type="checkbox" id="sched-enabled" checked><span class="track"></span></label>
+                  </div>
+                  <div style="display:flex;gap:10px;justify-content:flex-end">
+                    <button class="btn btn-ghost" id="btn-cancel-sched">Cancel</button>
+                    <button class="btn btn-primary" id="btn-save-sched">Save schedule</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sched-list" id="sched-list"></div>
+            <div class="app-foot">LSR AI Studio is a companion to <b>Jarvis — Your AI workspace</b> by LSR.AI · schedules here are local by design; Jarvis runs them in the cloud.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODELS -->
+      <section class="module" id="module-models" aria-label="Models">
+        <div class="page-scroll">
+          <div class="page-inner">
+            <div class="page-hero">
+              <h2>Models</h2>
+              <p>Hand-picked open models from your stack, plus anything OpenAI-compatible. Point the studio at any of them from <b style="color:var(--text)">Settings → Live API</b>.</p>
+            </div>
+            <div class="model-grid">
+              <div class="model-card glass">
+                <h3>Qwen3-Coder-Next</h3>
+                <p class="mdesc">Next-generation open coding model from the Qwen team — built for agentic software engineering, long-context repo work and tool use.</p>
+                <div class="model-tags"><span class="mtag">code</span><span class="mtag">agentic</span><span class="mtag">open weights</span></div>
+                <a class="btn btn-sm" href="https://huggingface.co/Qwen/Qwen3-Coder-Next" target="_blank" rel="noopener">View on Hugging Face</a>
+              </div>
+              <div class="model-card glass">
+                <h3>DeepSeek-V3</h3>
+                <p class="mdesc">DeepSeek's flagship open mixture-of-experts model — strong reasoning, math and code at a fraction of the usual inference cost.</p>
+                <div class="model-tags"><span class="mtag">reasoning</span><span class="mtag">MoE</span><span class="mtag">open weights</span></div>
+                <a class="btn btn-sm" href="https://github.com/deepseek-ai/DeepSeek-V3" target="_blank" rel="noopener">View on GitHub</a>
+              </div>
+              <div class="model-card glass">
+                <h3>Kimi K3</h3>
+                <p class="mdesc">Moonshot AI's open-source Kimi K3 — a frontier-class open model with strong long-context and multilingual abilities.</p>
+                <div class="model-tags"><span class="mtag">long context</span><span class="mtag">multilingual</span><span class="mtag">open source</span></div>
+                <a class="btn btn-sm" href="https://www.kimi.com/news/kimi-k3-open-source" target="_blank" rel="noopener">Read the announcement</a>
+              </div>
+            </div>
+            <div class="note-box"><b>Any OpenAI-compatible model works.</b> Self-hosted vLLM, LiteLLM gateway, NVIDIA Nemotron, Ollama, or a cloud API — paste the base URL, key and model name in Settings and flip the top-bar picker to Live.</div>
+            <div class="app-foot">LSR AI Studio is a companion to <b>Jarvis — Your AI workspace</b> by LSR.AI</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="module" id="module-settings" aria-label="Settings">
+        <div class="page-scroll">
+          <div class="page-inner">
+            <div class="page-hero">
+              <h2>Settings</h2>
+              <p>Connect a live model, tune the look and feel, and manage your local data. Everything stays in this browser — nothing is uploaded anywhere.</p>
+            </div>
+            <div class="settings-grid">
+              <div class="set-card glass">
+                <h3>Live API</h3>
+                <p>Use any OpenAI-compatible endpoint for real streaming completions. Leave empty to stay in Demo mode.</p>
+                <div class="field">
+                  <label for="set-api-base">Base URL</label>
+                  <input type="url" id="set-api-base" placeholder="https://api.openai.com/v1" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="set-api-key">API key</label>
+                  <input type="password" id="set-api-key" placeholder="sk-…" autocomplete="off">
+                  <div class="hint">Stored in localStorage on this device only. Never sent anywhere except your configured endpoint.</div>
+                </div>
+                <div class="field">
+                  <label for="set-model">Model name</label>
+                  <input type="text" id="set-model" placeholder="gpt-4o-mini" autocomplete="off">
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn btn-primary" id="btn-save-api">Save</button>
+                  <button class="btn" id="btn-test-api">Test connection</button>
+                </div>
+              </div>
+              <div class="set-card glass">
+                <h3>Appearance</h3>
+                <p>Accent theme and background animation.</p>
+                <div class="field">
+                  <label>Accent</label>
+                  <div class="accent-row">
+                    <button class="accent-swatch" data-accent="cyan"><span class="swatch-dot cyan"></span>Cyan</button>
+                    <button class="accent-swatch" data-accent="violet"><span class="swatch-dot violet"></span>Violet</button>
+                    <button class="accent-swatch" data-accent="emerald"><span class="swatch-dot emerald"></span>Emerald</button>
+                  </div>
+                </div>
+                <div class="toggle-row">
+                  <div><div class="t-label">Background animation</div><div class="t-desc">Particle grid &amp; drifting orbs on the canvas layer.</div></div>
+                  <label class="switch"><input type="checkbox" id="set-bg-anim" checked><span class="track"></span></label>
+                </div>
+              </div>
+              <div class="set-card glass">
+                <h3>Data</h3>
+                <p>Conversations, code files, schedules and settings live in localStorage.</p>
+                <div class="data-actions">
+                  <button class="btn" id="btn-export">Export JSON</button>
+                  <button class="btn" id="btn-import">Import JSON</button>
+                  <button class="btn btn-danger" id="btn-clear-data">Clear all data</button>
+                </div>
+                <input type="file" id="import-file" accept="application/json" hidden>
+              </div>
+              <div class="set-card glass">
+                <h3>Keyboard shortcuts</h3>
+                <p>Work faster without the mouse.</p>
+                <div style="display:grid;gap:8px;font-size:13px;color:var(--muted)">
+                  <div><span class="kbd">Enter</span> send message</div>
+                  <div><span class="kbd">Shift</span> + <span class="kbd">Enter</span> newline</div>
+                  <div><span class="kbd">Ctrl/⌘</span> + <span class="kbd">K</span> command palette</div>
+                  <div><span class="kbd">Ctrl/⌘</span> + <span class="kbd">N</span> new chat</div>
+                  <div><span class="kbd">Esc</span> stop generation / close palette</div>
+                </div>
+              </div>
+            </div>
+            <div class="app-foot">LSR AI Studio is a companion to <b>Jarvis — Your AI workspace</b> by LSR.AI · v1.0 · 100% client-side, zero dependencies</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Command palette -->
+  <div class="palette-overlay" id="palette-overlay">
+    <div class="palette glass" role="dialog" aria-label="Command palette">
+      <input type="text" id="palette-input" placeholder="Type a command or search…" autocomplete="off" aria-label="Command search">
+      <div class="palette-list" id="palette-list"></div>
+    </div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+  <noscript><div style="padding:40px;text-align:center;font-family:sans-serif">LSR AI Studio needs JavaScript to run.</div></noscript>
+
+  <script src="js/state.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/codelab.js"></script>
+  <script src="js/automations.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
